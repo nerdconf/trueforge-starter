@@ -4,9 +4,9 @@
 
 Found a bug in the scripts, or a step in the README that didn't work for you? Open an issue or a small PR here. One change per PR, with what and why.
 
-## To TrueForge (the PR prize)
+## To TrueForge
 
-TrueForge itself is open source (MIT): https://github.com/truefoundry/trueforge. A PR merged there is its own prize at Stranger Builds, open to every participant. Follow the maintainers' rules in their [CONTRIBUTING.md](https://github.com/truefoundry/trueforge/blob/main/CONTRIBUTING.md):
+TrueForge itself is open source (MIT): https://github.com/truefoundry/trueforge. Contributions are welcome there, though they don't count toward a Stranger Builds prize. Follow the maintainers' rules in their [CONTRIBUTING.md](https://github.com/truefoundry/trueforge/blob/main/CONTRIBUTING.md):
 
 1. **Issue first.** Pick an issue labelled [`help wanted`](https://github.com/truefoundry/trueforge/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), or open one and wait for a maintainer to approve it. PRs without an approved issue are not reviewed.
 2. **Small and focused.** One change, clearly described.
