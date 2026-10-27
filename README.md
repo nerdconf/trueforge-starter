@@ -156,7 +156,7 @@ Some ideas from the challenge brief: a PR reviewer that sharpens its checklist; 
 - **`git`**: real TrueForge [skills](https://trueforge.dev/skills). `setup` registers each `agent/skills/<name>` from your **public** repo (`SKILL_REPO_URL` in `.env`), pinned to the commit that runs, and turns the sandbox on. Push before each `run-evals`. Skills need a sandbox:
   - local `npx` on **macOS**: built-in local sandbox;
   - local `npx` on **Linux**: built-in local sandbox once `bubblewrap`, `socat` and `ripgrep` are installed (restart TrueForge after);
-  - Windows or hosted setups: [Daytona](https://trueforge.dev/sandbox) (has a free trial).
+  - [Daytona](https://trueforge.dev/sandbox): the sandbox TrueFoundry recommends for Stranger Builds, so every team works on the same setup, and the one to use on Windows or hosted setups. New Daytona sign-ups get free credits; if you aren't eligible, ask us in the event Slack.
 
 The challenge asks you to use **two or more** of: skills, subagents, MCP tools, the sandbox, schedules, human checkpoints, the SDK. This starter already uses the SDK; `git` mode adds skills and the sandbox. Subagents are on by default in TrueForge agents.
 
@@ -202,7 +202,7 @@ Built against TrueForge `@truefoundry/trueforge` 0.180.0 and `@truefoundry/truef
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), including how to go for the **PR prize** by contributing to [TrueForge](https://github.com/truefoundry/trueforge) itself.
+See [CONTRIBUTING.md](CONTRIBUTING.md), including how to contribute to [TrueForge](https://github.com/truefoundry/trueforge) itself.
 
 ## License
 
