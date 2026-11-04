@@ -201,6 +201,19 @@ export function loadTasks(): Task[] {
     .map((f) => JSON.parse(readFileSync(join(TASKS_DIR, f), "utf8")) as Task);
 }
 
+/**
+ * Overfitting guard: what an agent's playbook must never quote from the eval tasks
+ * (task ids, file names, the buggy lines of 16+ chars). Used by improve and verdict.
+ */
+export function findLeaks(files: { path: string; text: string }[], tasks: Task[] = loadTasks()): string[] {
+  const leaks: string[] = [];
+  for (const t of tasks) {
+    const quotes = [t.id, t.filename, ...t.expected.map((e) => (t.code[e.line - 1] ?? "").trim()).filter((l) => l.length >= 16)];
+    for (const f of files) for (const q of quotes) if (f.text.includes(q)) leaks.push(`${f.path} quotes "${q}"`);
+  }
+  return leaks;
+}
+
 export function numbered(code: string[]): string {
   const w = String(code.length).length;
   return code.map((l, i) => `${String(i + 1).padStart(w)} | ${l}`).join("\n");

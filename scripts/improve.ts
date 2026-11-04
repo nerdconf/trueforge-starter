@@ -14,6 +14,7 @@ import {
   client,
   die,
   exportSession,
+  findLeaks,
   flag,
   git,
   isClean,
@@ -135,11 +136,7 @@ for (const f of files) {
 }
 
 // Overfitting guard: the new playbook must not quote the eval tasks.
-const leaks: string[] = [];
-for (const t of loadTasks()) {
-  const quotes = [t.id, t.filename, ...t.expected.map((e) => t.code[e.line - 1].trim()).filter((l) => l.length >= 16)];
-  for (const f of files) for (const q of quotes) if (f.text.includes(q)) leaks.push(`${f.path} quotes "${q}"`);
-}
+const leaks = findLeaks(files);
 if (leaks.length && !flag("allow-leaks")) die(`The change quotes the eval tasks, so it would overfit:\n  ${leaks.join("\n  ")}\nRun improve again (or pass --allow-leaks to keep it anyway).`);
 
 for (const f of files.filter((f) => f.path.endsWith("/SKILL.md"))) {
@@ -173,5 +170,5 @@ if (flag("no-commit")) {
   git("add", "agent", join(dir, "improve-session.json"));
   git("commit", "-q", "-m", message);
   console.log(`\n✓ Committed the agent's change (Agent-Session: ${session.id}).`);
-  console.log("  Review it: git show    Drop it: git reset --hard HEAD~1    Then: npm run run-evals");
+  console.log("  Review it: git show    Drop it: git reset --hard HEAD~1    Then run npm run run-evals twice and npm run verdict");
 }
