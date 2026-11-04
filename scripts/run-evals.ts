@@ -30,7 +30,8 @@ import {
   writeJson,
 } from "./lib.ts";
 
-const HEADER = "run,session_id,agent_commit,score,date_utc,tasks_passed,tasks_total,tokens,tool_calls,duration_s";
+// New columns go at the end, so older summary.csv files and readers keep working.
+const HEADER = "run,session_id,agent_commit,score,date_utc,tasks_passed,tasks_total,tokens,tool_calls,duration_s,holdout_score,train_score";
 
 // 1. The agent and the eval must be committed, so agent_commit says exactly what ran.
 if (!isClean("agent", "evals") && !flag("allow-dirty")) {
@@ -39,6 +40,11 @@ if (!isClean("agent", "evals") && !flag("allow-dirty")) {
 const agentCommit = headSha() + (isClean("agent", "evals") ? "" : "-dirty");
 
 if (!existsSync(SUMMARY_CSV) || readFileSync(SUMMARY_CSV, "utf8").trim() === "") writeFileSync(SUMMARY_CSV, HEADER + "\n");
+else {
+  // A summary.csv from before holdout_score/train_score existed: extend its header (old rows keep empty cells).
+  const [head, ...rest] = readFileSync(SUMMARY_CSV, "utf8").split("\n");
+  if (head.trim() !== HEADER && HEADER.startsWith(head.trim() + ",")) writeFileSync(SUMMARY_CSV, [HEADER, ...rest].join("\n"));
+}
 const rows = readFileSync(SUMMARY_CSV, "utf8").trim().split("\n").slice(1).filter(Boolean);
 const run = rows.length + 1;
 const dir = runDir(run);
@@ -70,25 +76,41 @@ for (const task of tasks) {
 }
 const durationS = Math.round((Date.now() - started) / 1000);
 const total = scoreRun(results);
+// Held-out tasks (never shown to improve) and training tasks, scored the same way, reported apart.
+const holdout = results.filter((r) => r.holdout);
+const train = results.filter((r) => !r.holdout);
+const holdoutScore = holdout.length ? scoreRun(holdout).score : "";
+const trainScore = train.length ? scoreRun(train).score : "";
 
 // 5. Save the run.
 const exp = await exportSession(tf, session.id);
 const stats = sessionStats(exp);
 writeJson(join(dir, "results.json"), results);
-writeJson(join(dir, "score.json"), { run, session_id: session.id, agent_commit: agentCommit, ...total, ...stats, duration_s: durationS });
+writeJson(join(dir, "score.json"), { run, session_id: session.id, agent_commit: agentCommit, ...total, ...stats, duration_s: durationS, holdout_score: holdoutScore === "" ? null : holdoutScore, train_score: trainScore === "" ? null : trainScore });
 writeJson(join(dir, "session.json"), exp);
 
 const date = new Date().toISOString().replace(/\.\d+Z$/, "Z");
 appendFileSync(
   SUMMARY_CSV,
-  [run, session.id, agentCommit, total.score, date, total.tasks_passed, total.tasks_total, stats.tokens, stats.toolCalls, durationS].join(",") + "\n",
+  [run, session.id, agentCommit, total.score, date, total.tasks_passed, total.tasks_total, stats.tokens, stats.toolCalls, durationS, holdoutScore, trainScore].join(",") + "\n",
 );
 
 console.log(`\nRun ${nn} score: ${total.score} (${total.tasks_passed}/${total.tasks_total} tasks passed, ${stats.tokens} tokens)`);
+console.log(`  held-out: ${holdoutScore === "" ? "no held-out tasks" : holdoutScore}   training: ${trainScore === "" ? "-" : trainScore}`);
 
 // 6. Commit the run, so git history reads: run 1 → agent change → run N.
 if (!flag("no-commit")) {
   git("add", "runs");
   git("commit", "-q", "-m", `run ${nn}: score ${total.score}`, "-m", `TrueForge session: ${session.id}\nagent_commit: ${agentCommit}`);
-  console.log(`✓ Committed ${dir.replace(/.*\/runs\//, "runs/")}. Next: npm run improve`);
+  console.log(`✓ Committed ${dir.replace(/.*\/runs\//, "runs/")}. Next: ${nextStep(run)}`);
+}
+
+/** What to do after this run: measure the baseline spread first (3 runs), then improve, then confirm. */
+function nextStep(n: number): string {
+  // Has the agent changed itself since run 1? (a commit to agent/ with an Agent-Session trailer)
+  const agentChanged = git("log", "--format=%B", "--", "agent").includes("Agent-Session:");
+  if (agentChanged) return "run once more if you haven't, then npm run verdict -- <baseline runs> <runs after the change>";
+  if (n < 3) return `npm run run-evals again (${3 - n} more), to measure your baseline spread before any change`;
+  const all = Array.from({ length: n }, (_, i) => i + 1).join(",");
+  return `npm run spread -- ${all} (write down the range), then npm run improve`;
 }
